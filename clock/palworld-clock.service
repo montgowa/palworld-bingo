@@ -1,0 +1,15 @@
+# Example systemd unit for a Linux server. Copy to /etc/systemd/system/, adjust paths, then:
+#   sudo systemctl daemon-reload && sudo systemctl enable --now palworld-clock
+[Unit]
+Description=Palworld Hardcore Bingo player clock
+After=network-online.target
+
+[Service]
+WorkingDirectory=/opt/palworld-bingo/clock
+ExecStart=/usr/bin/python3 /opt/palworld-bingo/clock/player_clock.py run
+Environment=PALWORLD_ADMIN_PASSWORD=change-me
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

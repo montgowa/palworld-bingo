@@ -1,0 +1,14 @@
+{
+  "event": {
+    "name": "Palworld Hardcore Bingo",
+    "start": "2026-10-10T18:00:00-04:00",
+    "end": "2026-10-24T18:00:00-04:00"
+  },
+  "players": [
+    { "name": "Alex", "restarts": 0, "tiles": [] },
+    { "name": "Player 2", "restarts": 0, "tiles": [] },
+    { "name": "Player 3", "restarts": 0, "tiles": [] },
+    { "name": "Player 4", "restarts": 0, "tiles": [] },
+    { "name": "Player 5", "restarts": 0, "tiles": [] }
+  ]
+}

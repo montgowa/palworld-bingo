@@ -1,0 +1,59 @@
+name: Publish standings
+
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", "scripts/**", ".github/workflows/publish.yml"]
+  workflow_dispatch:
+
+# Only one update at a time, so two quick edits can't race each other.
+concurrency:
+  group: publish-standings
+  cancel-in-progress: false
+
+jobs:
+  deploy-site:
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check progress.json
+        run: |
+          node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            import { validate } from "./site/board.js";
+            const errors = validate(JSON.parse(readFileSync("site/progress.json", "utf8")));
+            if (errors.length) { console.error("progress.json has problems:\n- " + errors.join("\n- ")); process.exit(1); }
+            console.log("progress.json looks good.");'
+      - name: Stamp the update time
+        run: echo "{\"builtAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > site/build.json
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  update-discord:
+    needs: deploy-site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Stamp the update time
+        run: echo "{\"builtAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > site/build.json
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Post or edit the leaderboard message
+        run: node scripts/update-discord.mjs
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_MESSAGE_ID: ${{ vars.DISCORD_MESSAGE_ID }}
+          SITE_URL: ${{ vars.SITE_URL }}

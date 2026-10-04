@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Palworld Hardcore Bingo · Standings</title>
+<meta name="description" content="Live standings for Palworld Hardcore Bingo.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎱</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e8f2ea; --ink:#1d2b22; --muted:#55685c; --board:#ffffff; --line:#c9d9cd;
+  --r1:#d9ecf7; --r2:#dcefd6; --r3:#f3ecc9; --r4:#f6dcc0; --r5:#f2cfd4; --r6:#ecbcbc;
+  --done:#2f7d4f; --gold:#c9961a; --sphere-top:#d8443b; --sphere-bot:#ffffff; --sel:#2f7d4f;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16201a; --ink:#e7efe9; --muted:#9db1a4; --board:#1e2a23; --line:#33443a;
+    --r1:#1f3442; --r2:#22382a; --r3:#3a3520; --r4:#3e2e1e; --r5:#40252b; --r6:#4a2222;
+    --done:#4fb07a; --gold:#e2b440; --sphere-bot:#f2f2f2; --sel:#4fb07a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16201a; --ink:#e7efe9; --muted:#9db1a4; --board:#1e2a23; --line:#33443a;
+  --r1:#1f3442; --r2:#22382a; --r3:#3a3520; --r4:#3e2e1e; --r5:#40252b; --r6:#4a2222;
+  --done:#4fb07a; --gold:#e2b440; --sphere-bot:#f2f2f2; --sel:#4fb07a;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.45}
+.wrap{max-width:1100px;margin:0 auto;padding:28px 18px 48px}
+h1,h2,.rank,.score{font-family:Fredoka,Nunito,system-ui,sans-serif}
+h1{font-weight:700;font-size:clamp(1.8rem,4.5vw,2.7rem);margin:0;letter-spacing:-.01em}
+h2{font-weight:600;font-size:1.3rem;margin:0 0 10px}
+.status{color:var(--muted);margin:6px 0 22px}
+.status strong{color:var(--ink)}
+
+/* Standings */
+.standings{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.player{display:grid;grid-template-columns:52px 1fr auto auto;align-items:center;gap:16px;width:100%;
+  background:var(--board);border:2px solid var(--line);border-radius:16px;padding:12px 18px;
+  font:inherit;color:inherit;text-align:left;cursor:pointer}
+.player:focus-visible{outline:3px solid var(--sel);outline-offset:2px}
+.player[aria-pressed="true"]{border-color:var(--sel)}
+.rank{font-size:1.9rem;font-weight:700;text-align:center;color:var(--muted)}
+.lead .rank{color:var(--gold)}
+.who .name{font-weight:800;font-size:1.15rem;display:block}
+.who .meta{color:var(--muted);font-size:.88rem}
+.tie{display:inline-block;margin-left:6px;font-size:.78rem;font-weight:700;color:var(--ink);background:var(--r4);border-radius:999px;padding:1px 8px;vertical-align:2px}
+.mini{display:grid;grid-template-columns:repeat(6,12px);gap:3px}
+.mini i{width:12px;height:12px;border-radius:3px;display:block}
+.mini i.on{background:var(--done)!important}
+.score{text-align:right;min-width:72px}
+.score b{display:block;font-size:2rem;font-weight:700;line-height:1}
+.score span{color:var(--muted);font-family:Nunito,sans-serif;font-size:.85rem}
+.empty{background:var(--board);border:2px dashed var(--line);border-radius:16px;padding:22px;color:var(--muted)}
+
+/* Full board */
+.detail{margin-top:30px}
+.detail-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 18px;margin-bottom:10px}
+.detail-head h2{margin:0}
+.detail-head span{color:var(--muted)}
+.scroller{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
+.board{display:grid;grid-template-columns:96px repeat(6,minmax(118px,1fr));gap:8px;min-width:860px;background:var(--board);border:2px solid var(--line);border-radius:18px;padding:12px}
+.colhead{font-family:Fredoka,Nunito,sans-serif;font-weight:600;text-align:center;font-size:.85rem;color:var(--muted);padding:2px 0 4px}
+.rowlabel{font-family:Fredoka,Nunito,sans-serif;font-weight:600;display:flex;align-items:center;justify-content:flex-end;text-align:right;padding-right:6px;font-size:.95rem}
+.tile{position:relative;border-radius:12px;padding:12px 10px 10px;min-height:92px;border:2px solid transparent}
+.tile .tname{font-weight:700;font-size:.95rem;line-height:1.2;padding-right:30px}
+.tile .tdetail{font-size:.8rem;color:var(--muted);margin-top:4px}
+.tile.done{border-color:var(--done)}
+.tile.done::after{content:"✓";position:absolute;bottom:6px;right:10px;color:var(--done);font-weight:800;font-size:1.3rem}
+.sphere{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(var(--sphere-top) 0 47%, #222 47% 53%, var(--sphere-bot) 53% 100%);
+  border:2px solid #222;display:grid;place-items:center}
+.sphere b{font-family:Fredoka,sans-serif;font-size:.72rem;background:#fff;color:#222;border:1.5px solid #222;border-radius:50%;width:18px;height:18px;display:grid;place-items:center;line-height:1}
+.skull{font-size:.85em;opacity:.8}
+
+/* Rules */
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:34px}
+.rules section{background:var(--board);border:2px solid var(--line);border-radius:14px;padding:14px 16px}
+.rules h2{font-size:1.1rem;margin:0 0 6px}
+.rules ul{margin:0;padding-left:18px}
+.rules li{margin:3px 0}
+.error{background:var(--r5);border-radius:14px;padding:14px 18px;margin-bottom:18px}
+.error ul{margin:6px 0 0;padding-left:18px}
+
+/* Snapshot mode: the image posted to Discord */
+body.snapshot .wrap{max-width:none;width:1000px;padding:26px 28px 28px}
+body.snapshot .detail, body.snapshot .rules{display:none}
+body.snapshot .player{cursor:default;padding:12px 22px}
+body.snapshot .mini{grid-template-columns:repeat(6,16px);gap:4px}
+body.snapshot .mini i{width:16px;height:16px}
+body.snapshot .who .name{font-size:1.4rem}
+body.snapshot .who .meta{font-size:1rem}
+
+@media (max-width:640px){
+  .player{grid-template-columns:36px 1fr auto;gap:12px;padding:12px 14px}
+  .player .mini{display:none}
+  .rank{font-size:1.5rem}
+  .score b{font-size:1.6rem}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="snapshot">
+  <h1>Palworld Hardcore Bingo</h1>
+  <p class="status" id="status">Loading standings…</p>
+  <div id="errors"></div>
+  <ol class="standings" id="standings" aria-label="Standings"></ol>
+
+  <section class="detail" id="detail" hidden>
+    <div class="detail-head">
+      <h2 id="detail-name"></h2>
+      <span id="detail-meta"></span>
+    </div>
+    <div class="scroller"><div class="board" id="board" role="grid" aria-label="Player board"></div></div>
+  </section>
+
+  <div class="rules">
+    <section>
+      <h2>Scoring</h2>
+      <ul>
+        <li>Safe tiles score 2, 3, 4, 5, 6, 7 across the level tiers. Passives score by passive rank: rank 1 is 2, rank 2 is 3, rank 3 is 5, rank 4 is 7.</li>
+        <li>Danger tiles (☠) score 3, 5, 7, 9, 11, 13: the later the fight, the more a death costs, so the more it pays.</li>
+        <li>Line bonuses: +8 per row, +12 per column, +12 per diagonal.</li>
+        <li>A perfect blackout is 385 points. The event runs the full two weeks either way.</li>
+        <li>Ties are settled by a PvP duel.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Hardcore rules</h2>
+      <ul>
+        <li>Solo players on one shared server, for two weeks.</li>
+        <li>If you die, you restart as a new Lv 1 character. Completed tiles carry over.</li>
+        <li>Your old base, Palbox and dropped items are off limits after a death.</li>
+        <li>Breeding is banned. Hatching eggs found in the wild is allowed.</li>
+        <li>Contested targets are first come, first served.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Event conduct</h2>
+      <ul>
+        <li>Everyone creates their character at the same start time.</li>
+        <li>Each player has 40 hours of playtime for the whole event. The server tracks it, warns you as it runs low, and logs you out when it's gone.</li>
+        <li>Every death stands, including deaths caused by bugs. The server is never rolled back.</li>
+        <li>No exploits, such as clipping through walls or duplicating items.</li>
+        <li>Submit each screenshot as soon as you complete the tile. Holding them back for a late "final submission" isn't allowed.</li>
+        <li>Stealing a Pal someone else is fighting is fair game.</li>
+        <li>Trading Pals, gold and items between players is allowed, and traded Pals count toward Passive and Paldeck tiles.</li>
+        <li>Field alphas must be captured by you. A traded alpha doesn't count.</li>
+        <li>Tower bosses must be beaten solo.</li>
+        <li>Tie-breaker duels have no format restrictions, but the location is agreed before the duel.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Getting a tile</h2>
+      <ul>
+        <li>Post a clean end-state screenshot in Discord: a defeat screen, Paldeck count, Palbox or Pal status screen.</li>
+        <li>Alphas must be captured. Bounties must be defeated.</li>
+        <li>Tiles appear here once an admin approves them.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

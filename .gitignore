@@ -1,0 +1,7 @@
+node_modules/
+standings.png
+site/build.json
+clock/clock_config.json
+clock/clock_state.json
+clock/clock_state.tmp
+clock/clock_adjustments.jsonl
