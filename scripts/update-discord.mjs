@@ -4,7 +4,9 @@
 //   DISCORD_WEBHOOK_URL  (required unless DRY_RUN=1) the channel webhook URL
 //   DISCORD_MESSAGE_ID   (optional) the message to edit; leave empty on the first run
 //   SITE_URL             (optional) the public site, linked from the embed
-//   DRY_RUN=1            render to standings.png and print the embed without posting
+//   DISCORD_BOARD_WEBHOOK_URL  (optional) where to post the full tile board; defaults to DISCORD_WEBHOOK_URL
+//   DISCORD_BOARD_MESSAGE_ID   (optional) the board message to edit; leave empty on the first run
+//   DRY_RUN=1            render standings.png and board.png and print the embeds without posting
 
 import http from "node:http";
 import { readFile, writeFile } from "node:fs/promises";
@@ -15,6 +17,8 @@ import { validate, standings, allPlayers, playtimeFor, playtimeTier, formatMinut
 
 const SITE_DIR = fileURLToPath(new URL("../site/", import.meta.url));
 const { DISCORD_WEBHOOK_URL, DISCORD_MESSAGE_ID, SITE_URL, DRY_RUN } = process.env;
+const BOARD_WEBHOOK_URL = process.env.DISCORD_BOARD_WEBHOOK_URL || DISCORD_WEBHOOK_URL;
+const { DISCORD_BOARD_MESSAGE_ID } = process.env;
 
 const progress = JSON.parse(await readFile(join(SITE_DIR, "progress.json"), "utf8"));
 const errors = validate(progress);
@@ -40,13 +44,17 @@ const server = http.createServer(async (req, res) => {
 await new Promise(r => server.listen(0, "127.0.0.1", r));
 const { port } = server.address();
 
-let png;
+let png, boardPng;
 const browser = await chromium.launch();
 try {
-  const page = await browser.newPage({ viewport: { width: 1000, height: 800 }, deviceScaleFactor: 2, colorScheme: "dark" });
-  await page.goto(`http://127.0.0.1:${port}/?snapshot`);
-  await page.waitForSelector("body[data-ready='1']", { timeout: 30000 });
-  png = await page.locator("#snapshot").screenshot({ type: "png" });
+  const shoot = async (query, width) => {
+    const page = await browser.newPage({ viewport: { width, height: 800 }, deviceScaleFactor: 2, colorScheme: "dark" });
+    await page.goto(`http://127.0.0.1:${port}/?${query}`);
+    await page.waitForSelector("body[data-ready='1']", { timeout: 30000 });
+    return page.locator("#snapshot").screenshot({ type: "png" });
+  };
+  png = await shoot("snapshot", 1000);
+  boardPng = await shoot("board", 1240);
 } finally {
   await browser.close();
   server.close();
@@ -76,10 +84,21 @@ const embed = {
 };
 if (SITE_URL) embed.url = SITE_URL;
 
+const boardEmbed = {
+  title: "The board",
+  description: "Every tile, its points and how many players have it. Post a clean screenshot in Discord " +
+    "as soon as you finish a tile." + (SITE_URL ? `\n\n[Open the standings](${SITE_URL})` : ""),
+  color: 0xc9961a,
+  image: { url: "attachment://board.png" },
+  footer: { text: "Updated" },
+  timestamp: embed.timestamp,
+};
+
 if (DRY_RUN) {
   await writeFile("standings.png", png);
-  console.log(JSON.stringify(embed, null, 2));
-  console.log("Dry run: wrote standings.png and posted nothing.");
+  await writeFile("board.png", boardPng);
+  console.log(JSON.stringify([embed, boardEmbed], null, 2));
+  console.log("Dry run: wrote standings.png and board.png and posted nothing.");
   process.exit(0);
 }
 
@@ -88,36 +107,45 @@ if (!DISCORD_WEBHOOK_URL) {
   process.exit(1);
 }
 
-const form = new FormData();
-form.append("payload_json", JSON.stringify({
-  embeds: [embed],
-  attachments: [{ id: 0, filename: "standings.png" }],
-  allowed_mentions: { parse: [] },
-}));
-form.append("files[0]", new Blob([png], { type: "image/png" }), "standings.png");
+// Posts a new message, or edits it when an ID is known. Returns false on failure.
+async function send({ label, webhook, messageId, idVar, embed, file, image }) {
+  const form = new FormData();
+  form.append("payload_json", JSON.stringify({
+    embeds: [embed],
+    attachments: [{ id: 0, filename: file }],
+    allowed_mentions: { parse: [] },
+  }));
+  form.append("files[0]", new Blob([image], { type: "image/png" }), file);
 
-const base = DISCORD_WEBHOOK_URL.replace(/\/+$/, "");
-const editing = Boolean(DISCORD_MESSAGE_ID);
-const url = editing ? `${base}/messages/${DISCORD_MESSAGE_ID}` : `${base}?wait=true`;
-const res = await fetch(url, { method: editing ? "PATCH" : "POST", body: form });
-
-if (!res.ok) {
-  console.error(`Discord rejected the update (${res.status}): ${await res.text()}`);
-  if (editing && res.status === 404) {
-    console.error("The message wasn't found. Clear DISCORD_MESSAGE_ID to post a fresh one.");
+  const base = webhook.replace(/\/+$/, "");
+  const url = messageId ? `${base}/messages/${messageId}` : `${base}?wait=true`;
+  const res = await fetch(url, { method: messageId ? "PATCH" : "POST", body: form });
+  if (!res.ok) {
+    console.error(`Discord rejected the ${label} update (${res.status}): ${await res.text()}`);
+    if (messageId && res.status === 404) {
+      console.error(`The ${label} message wasn't found. Clear ${idVar} to post a fresh one.`);
+    }
+    return false;
   }
-  process.exit(1);
-}
-
-if (editing) {
-  console.log(`Edited Discord message ${DISCORD_MESSAGE_ID}.`);
-} else {
+  if (messageId) {
+    console.log(`Edited the ${label} message ${messageId}.`);
+    return true;
+  }
   const msg = await res.json();
-  console.log(`Posted a new leaderboard message: ${msg.id}`);
-  console.log("Save this ID as the DISCORD_MESSAGE_ID repository variable so future runs edit it instead of posting again.");
+  console.log(`Posted a new ${label} message: ${msg.id}`);
+  console.log(`Save this ID as the ${idVar} repository variable so future runs edit it instead of posting again.`);
   if (process.env.GITHUB_STEP_SUMMARY) {
     await writeFile(process.env.GITHUB_STEP_SUMMARY,
-      `### New leaderboard message posted\n\nSet the repository variable \`DISCORD_MESSAGE_ID\` to \`${msg.id}\`, then pin the message in Discord.\n`,
+      `### New ${label} message posted\n\nSet the repository variable \`${idVar}\` to \`${msg.id}\`, then pin the message in Discord.\n`,
       { flag: "a" });
   }
+  return true;
 }
+
+const ok = [
+  await send({ label: "leaderboard", webhook: DISCORD_WEBHOOK_URL, messageId: DISCORD_MESSAGE_ID,
+    idVar: "DISCORD_MESSAGE_ID", embed, file: "standings.png", image: png }),
+  await send({ label: "board", webhook: BOARD_WEBHOOK_URL, messageId: DISCORD_BOARD_MESSAGE_ID,
+    idVar: "DISCORD_BOARD_MESSAGE_ID", embed: boardEmbed, file: "board.png", image: boardPng }),
+];
+if (ok.includes(false)) process.exit(1);

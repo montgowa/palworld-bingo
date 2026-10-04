@@ -57,3 +57,5 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           DISCORD_MESSAGE_ID: ${{ vars.DISCORD_MESSAGE_ID }}
           SITE_URL: ${{ vars.SITE_URL }}
+          DISCORD_BOARD_WEBHOOK_URL: ${{ secrets.DISCORD_BOARD_WEBHOOK_URL }}
+          DISCORD_BOARD_MESSAGE_ID: ${{ vars.DISCORD_BOARD_MESSAGE_ID }}

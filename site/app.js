@@ -2,8 +2,13 @@ import { ROWS, TIERS, findTile, validate, standings, allPlayers, playtimeFor, pl
 
 const snapshot = new URLSearchParams(location.search).has("snapshot");
 if (snapshot) document.body.classList.add("snapshot");
+// ?board: the reference board posted as the second Discord message.
+const boardshot = new URLSearchParams(location.search).has("board");
+if (boardshot) document.body.classList.add("boardshot");
 
 const $ = id => document.getElementById(id);
+// Drawn rather than typed: the ☠ character renders as a smudge in some fonts.
+const SKULL = '<svg class="skull" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1C4.1 1 1.5 3.6 1.5 7c0 2 1 3.4 2.5 4.2V14h2v-1.5h1V14h2v-1.5h1V14h2v-2.8c1.5-.8 2.5-2.2 2.5-4.2C14.5 3.6 11.9 1 8 1z"/><circle cx="5.4" cy="7.4" r="1.7" fill="rgba(0,0,0,.6)"/><circle cx="10.6" cy="7.4" r="1.7" fill="rgba(0,0,0,.6)"/></svg>';
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 async function getJSON(url) {
@@ -154,7 +159,9 @@ function renderStandings(list, onSelect) {
   });
 }
 
-function renderBoard(p) {
+// The full board for one player, or (with counts) the shared reference board showing
+// how many players have each tile.
+function renderBoard(p, counts = null) {
   const board = $("board");
   board.textContent = "";
   board.appendChild(Object.assign(document.createElement("div"), { className: "colhead" }));
@@ -170,15 +177,29 @@ function renderBoard(p) {
       tile.setAttribute("role", "gridcell");
       tile.setAttribute("aria-label", `${n}, ${d}, ${pts} points${danger ? ", danger tile" : ""}, ${done ? "complete" : "not complete"}`);
       tile.innerHTML = `<div class="sphere" aria-hidden="true"><b>${pts}</b></div>` +
-        `<div class="tname">${danger ? '<span class="skull">☠</span> ' : ""}</div><div class="tdetail"></div>`;
+        `<div class="tname">${danger ? SKULL + " " : ""}</div><div class="tdetail"></div>`;
       tile.querySelector(".tname").append(n);
       tile.querySelector(".tdetail").textContent = d;
+      if (counts && counts[r][c]) {
+        tile.appendChild(Object.assign(document.createElement("div"), {
+          className: "tcount", textContent: `✓ ${plural(counts[r][c], "player")}` }));
+      }
       board.appendChild(tile);
     });
   });
+  $("detail").hidden = false;
+  if (counts) return;
   $("detail-name").textContent = p.name;
   $("detail-meta").textContent = `${p.total} points: ${p.points} from tiles, ${p.bonus} from lines`;
-  $("detail").hidden = false;
+}
+
+function renderReference(list) {
+  const counts = Array.from({ length: 6 }, () => Array(6).fill(0));
+  list.forEach(p => p.grid.forEach((row, r) => row.forEach((on, c) => { if (on) counts[r][c]++; })));
+  renderBoard({ grid: counts.map(row => row.map(() => false)) }, counts);
+  $("detail-name").textContent = "The board";
+  $("detail-meta").innerHTML = `Points are on each Pal Sphere. ${SKULL} tiles can kill you. ` +
+    "Line bonuses: +8 per row, +12 per column, +12 per diagonal. A blackout is 385.";
 }
 
 async function main() {
@@ -216,8 +237,9 @@ async function main() {
   };
   const rows = renderStandings(list, select);
   if (snapshot) renderCards(list);
+  if (boardshot) renderReference(list);
 
-  if (!snapshot && rows.length) {
+  if (!snapshot && !boardshot && rows.length) {
     const wanted = decodeURIComponent(location.hash.slice(1)).toLowerCase();
     const pick = rows.find(x => x.p.name.toLowerCase() === wanted) || rows[0];
     select(pick.p, pick.btn);

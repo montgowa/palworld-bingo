@@ -6,3 +6,4 @@ clock/clock_state.json
 clock/clock_state.tmp
 clock/clock_adjustments.jsonl
 __pycache__/
+board.png
