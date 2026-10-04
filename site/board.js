@@ -37,19 +37,19 @@ export const ROWS = [
     ["Hot Property", "Capture alpha Blazamut · Lv 49"],
     ["Big Fish Energy", "Capture alpha Jormuntide · Lv 55"]] },
   { name: "Bounties", track: "D", tint: "--r5", tiles: [
-    ["Scoot Free", "Defeat bounty Scoot · Lv 10"],
-    ["Off the Grill", "Defeat bounty Grill · Lv 20"],
-    ["Flare-well", "Defeat bounty Flare · Lv 38"],
-    ["Skim Milk", "Defeat bounty Skim · Lv 42"],
-    ["Clint-ical Hit", "Defeat bounty Clint · Lv 49"],
-    ["Ram-shackled", "Defeat bounty Ram · Lv 59"]] },
+    ["Scoot Free", "Defeat or capture Scoot · Lv 10"],
+    ["Off the Grill", "Defeat or capture Grill · Lv 20"],
+    ["Flare-well", "Defeat or capture Flare · Lv 38"],
+    ["Skim Milk", "Defeat or capture Skim · Lv 42"],
+    ["Clint-ical Hit", "Defeat or capture Clint · Lv 49"],
+    ["Ram-shackled", "Defeat or capture Ram · Lv 59"]] },
   { name: "Wildcard", tint: "--r6", tiles: [
     ["Hunting Season", "Obtain a Predator Core", "D"],
     ["Crude Awakening", "Loot the Test Drilling Rig's big chest · Lv 30", "D"],
     ["Gold Digger", "Hold 1,000,000 gold at once", "S"],
     ["Condensed Milk", "Condense any Pal to 4 stars", "S"],
     ["Fade to Noir", "Defeat the Bellanoir raid", "D"],
-    ["Helicopter Parent", "Have a Pal reach Lv 60", "D"]] },
+    ["Over the Hill", "Own a Pal at Lv 60 or higher", "D"]] },
 ];
 
 // Flat lookup: lower-cased name -> {r, c, name, detail, danger, points}
