@@ -14,18 +14,21 @@
   --bg:#e8f2ea; --ink:#1d2b22; --muted:#55685c; --board:#ffffff; --line:#c9d9cd;
   --r1:#d9ecf7; --r2:#dcefd6; --r3:#f3ecc9; --r4:#f6dcc0; --r5:#f2cfd4; --r6:#ecbcbc;
   --done:#2f7d4f; --gold:#c9961a; --sphere-top:#d8443b; --sphere-bot:#ffffff; --sel:#2f7d4f;
+  --a1:#3a86c8; --a2:#3f9a4a; --a3:#c9961a; --a4:#e07b2a; --a5:#d0566b; --a6:#b83a3a;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#16201a; --ink:#e7efe9; --muted:#9db1a4; --board:#1e2a23; --line:#33443a;
     --r1:#1f3442; --r2:#22382a; --r3:#3a3520; --r4:#3e2e1e; --r5:#40252b; --r6:#4a2222;
     --done:#4fb07a; --gold:#e2b440; --sphere-bot:#f2f2f2; --sel:#4fb07a;
+    --a1:#5aa7e6; --a2:#5cc06a; --a3:#e2b440; --a4:#f08f3c; --a5:#e8708a; --a6:#e05252;
   }
 }
 :root[data-theme="dark"]{
   --bg:#16201a; --ink:#e7efe9; --muted:#9db1a4; --board:#1e2a23; --line:#33443a;
   --r1:#1f3442; --r2:#22382a; --r3:#3a3520; --r4:#3e2e1e; --r5:#40252b; --r6:#4a2222;
   --done:#4fb07a; --gold:#e2b440; --sphere-bot:#f2f2f2; --sel:#4fb07a;
+  --a1:#5aa7e6; --a2:#5cc06a; --a3:#e2b440; --a4:#f08f3c; --a5:#e8708a; --a6:#e05252;
 }
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.45}
@@ -49,8 +52,8 @@ h2{font-weight:600;font-size:1.3rem;margin:0 0 10px}
 .who .meta{color:var(--muted);font-size:.88rem}
 .tie{display:inline-block;margin-left:6px;font-size:.78rem;font-weight:700;color:var(--ink);background:var(--r4);border-radius:999px;padding:1px 8px;vertical-align:2px}
 .mini{display:grid;grid-template-columns:repeat(6,12px);gap:3px}
-.mini i{width:12px;height:12px;border-radius:3px;display:block}
-.mini i.on{background:var(--done)!important}
+.mini i{width:12px;height:12px;border-radius:3px;display:block;background:var(--tint)}
+.mini i.on{background:var(--accent)}
 .score{text-align:right;min-width:72px}
 .score b{display:block;font-size:2rem;font-weight:700;line-height:1}
 .score span{color:var(--muted);font-family:Nunito,sans-serif;font-size:.85rem}
@@ -87,12 +90,32 @@ h2{font-weight:600;font-size:1.3rem;margin:0 0 10px}
 
 /* Snapshot mode: the image posted to Discord */
 body.snapshot .wrap{max-width:none;width:1000px;padding:26px 28px 28px}
-body.snapshot .detail, body.snapshot .rules{display:none}
-body.snapshot .player{cursor:default;padding:12px 22px}
-body.snapshot .mini{grid-template-columns:repeat(6,16px);gap:4px}
-body.snapshot .mini i{width:16px;height:16px}
-body.snapshot .who .name{font-size:1.4rem}
-body.snapshot .who .meta{font-size:1rem}
+body.snapshot .detail, body.snapshot .rules, body.snapshot .standings{display:none}
+body.snapshot .status{margin-bottom:6px}
+.legend{display:none;color:var(--muted);font-size:.95rem;margin:0 0 18px;gap:6px 18px;flex-wrap:wrap;align-items:center}
+body.snapshot .legend{display:flex}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:16px;height:16px;border-radius:4px;display:inline-grid;place-items:center;font-style:normal;font-size:.7rem;font-weight:800;color:#fff}
+.cards{display:none;grid-template-columns:repeat(3,1fr);gap:16px}
+body.snapshot .cards{display:grid}
+.card{background:var(--board);border:2px solid var(--line);border-radius:16px;padding:12px 14px 14px}
+.card.lead{border-color:var(--gold)}
+.card header{display:flex;align-items:center;gap:10px}
+.crank{font-family:Fredoka,sans-serif;font-weight:700;font-size:1.05rem;min-width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--line);color:var(--ink)}
+.card.lead .crank{background:var(--gold);color:#1d2b22}
+.cname{font-weight:800;font-size:1.2rem;line-height:1.15;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cscore{font-family:Fredoka,sans-serif;text-align:right;line-height:1}
+.cscore b{font-size:1.7rem;font-weight:700}
+.cscore span{display:block;color:var(--muted);font-family:Nunito,sans-serif;font-size:.75rem}
+.cmeta{color:var(--muted);font-size:.85rem;margin:4px 0 10px 44px}
+.cboard{display:grid;grid-template-columns:62px repeat(6,1fr);gap:4px;align-items:center}
+.cboard .ch{font-family:Fredoka,sans-serif;font-size:.72rem;color:var(--muted);text-align:center}
+.cboard .rl{font-size:.75rem;font-weight:700;color:var(--muted);text-align:right;padding-right:4px;white-space:nowrap}
+.cell{aspect-ratio:1;border-radius:6px;background:var(--tint);display:grid;place-items:center;font-size:.8rem;color:var(--ink)}
+.cell.skull{background:repeating-linear-gradient(135deg,var(--tint) 0 5px,color-mix(in srgb,var(--accent) 28%,var(--tint)) 5px 8px)}
+.cell.on{background:var(--accent);color:#fff;font-weight:900;font-size:1rem}
+.cell.on::before{content:"✓"}
+.cell.line{box-shadow:0 0 0 2.5px var(--ink)}
 
 @media (max-width:640px){
   .player{grid-template-columns:36px 1fr auto;gap:12px;padding:12px 14px}
@@ -108,7 +131,13 @@ body.snapshot .who .meta{font-size:1rem}
   <h1>Palworld Hardcore Bingo</h1>
   <p class="status" id="status">Loading standings…</p>
   <div id="errors"></div>
+  <div class="legend" aria-hidden="true">
+    <span><i style="background:var(--a1)">✓</i>Completed tile</span>
+    <span><i style="background:repeating-linear-gradient(135deg,var(--r6) 0 4px,color-mix(in srgb,var(--a6) 28%,var(--r6)) 4px 6px)"></i>Danger tile</span>
+    <span><i style="background:var(--a2);box-shadow:0 0 0 2px var(--ink)">✓</i>Part of a finished line</span>
+  </div>
   <ol class="standings" id="standings" aria-label="Standings"></ol>
+  <div class="cards" id="cards" aria-hidden="true"></div>
 
   <section class="detail" id="detail" hidden>
     <div class="detail-head">

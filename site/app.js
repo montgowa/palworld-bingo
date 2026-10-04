@@ -34,11 +34,60 @@ function miniBoard(grid) {
   el.setAttribute("aria-hidden", "true");
   grid.forEach((row, r) => row.forEach(on => {
     const i = document.createElement("i");
-    i.style.background = `var(${ROWS[r].tint})`;
+    rowColors(i, r);
     if (on) i.className = "on";
     el.appendChild(i);
   }));
   return el;
+}
+
+// Each row has a soft tint (--r1..6) and a bright accent (--a1..6) for completed tiles.
+function rowColors(el, r) {
+  el.style.setProperty("--tint", `var(${ROWS[r].tint})`);
+  el.style.setProperty("--accent", `var(${ROWS[r].tint.replace("--r", "--a")})`);
+}
+
+// Cells that belong to a completed row, column or diagonal.
+function lineCells(grid) {
+  const idx = [0, 1, 2, 3, 4, 5], hit = new Set();
+  const take = cells => { if (cells.every(([r, c]) => grid[r][c])) cells.forEach(([r, c]) => hit.add(r * 6 + c)); };
+  idx.forEach(i => { take(idx.map(c => [i, c])); take(idx.map(r => [r, i])); });
+  take(idx.map(i => [i, i]));
+  take(idx.map(i => [i, 5 - i]));
+  return hit;
+}
+
+// Snapshot mode: one bingo card per player, laid out three across for Discord.
+function renderCards(list) {
+  const wrap = $("cards");
+  wrap.textContent = "";
+  list.forEach(p => {
+    const card = document.createElement("article");
+    card.className = "card" + (p.rank === 1 && p.total > 0 ? " lead" : "");
+    card.innerHTML = `<header><span class="crank"></span><span class="cname"></span>` +
+      `<span class="cscore"><b></b><span>points</span></span></header><div class="cmeta"></div><div class="cboard"></div>`;
+    card.querySelector(".crank").textContent = p.rank;
+    card.querySelector(".cname").textContent = p.name;
+    card.querySelector(".cscore b").textContent = p.total;
+    card.querySelector(".cmeta").textContent = `${plural(p.tiles, "tile")} · ${plural(p.lines, "line")}` +
+      (p.restarts ? ` · ${plural(p.restarts, "restart")}` : "") + (p.tied ? " · tied" : "");
+
+    const board = card.querySelector(".cboard");
+    const lines = lineCells(p.grid);
+    board.appendChild(Object.assign(document.createElement("span"), { className: "ch", textContent: "Lv" }));
+    TIERS.forEach(t => board.appendChild(Object.assign(document.createElement("span"), { className: "ch", textContent: t.replace("Lv ", "") })));
+    ROWS.forEach((row, r) => {
+      board.appendChild(Object.assign(document.createElement("span"), { className: "rl", textContent: row.short || row.name }));
+      row.tiles.forEach(([n], c) => {
+        const cell = document.createElement("i");
+        const on = p.grid[r][c];
+        cell.className = "cell" + (on ? " on" : findTile(n).danger ? " skull" : "") + (lines.has(r * 6 + c) ? " line" : "");
+        rowColors(cell, r);
+        board.appendChild(cell);
+      });
+    });
+    wrap.appendChild(card);
+  });
 }
 
 function renderStandings(list, onSelect) {
@@ -148,6 +197,7 @@ async function main() {
     if (!snapshot) history.replaceState(null, "", "#" + encodeURIComponent(p.name));
   };
   const rows = renderStandings(list, select);
+  if (snapshot) renderCards(list);
 
   if (!snapshot && rows.length) {
     const wanted = decodeURIComponent(location.hash.slice(1)).toLowerCase();

@@ -29,7 +29,7 @@ export const ROWS = [
     ["Century Club", "Register 100 Pals in your Paldeck"],
     ["Pal Hoarder", "Register 125 Pals in your Paldeck"],
     ["Touch Grass Later", "Register 150 Pals in your Paldeck"]] },
-  { name: "Field alphas", track: "D", tint: "--r4", tiles: [
+  { name: "Field alphas", short: "Alphas", track: "D", tint: "--r4", tiles: [
     ["Chill Pill", "Capture alpha Chillet · Lv 11"],
     ["Bushi Whacked", "Capture alpha Bushi · Lv 25"],
     ["Elphi on the Shelf", "Capture alpha Elphidran · ~Lv 30"],
