@@ -9,5 +9,9 @@
   "enforce_start": true,
   "exempt_userids": [],
   "discord_webhook_url": "",
-  "discord_update_minutes": 5
+  "discord_update_minutes": 5,
+  "publish_minutes": 30,
+  "player_names": {
+    "In-game name or userid": "Name on the bingo board"
+  }
 }

@@ -112,3 +112,17 @@ export function standings(progress) {
   list.forEach(p => { p.tied = p.total > 0 && list.filter(q => q.total === p.total).length > 1; });
   return list;
 }
+
+// Playtime for one player from playtime.json (written by the player clock), or null if unknown.
+// Returns {played, left, budget, out} in minutes.
+export function playtimeFor(playtime, name) {
+  if (!playtime || !playtime.budget_minutes) return null;
+  const key = Object.keys(playtime.players || {}).find(k => k.toLowerCase() === String(name).toLowerCase());
+  const p = key ? playtime.players[key] : {};
+  const budget = playtime.budget_minutes, played = Math.min(budget, p.played_minutes || 0);
+  return { played, left: p.out ? 0 : budget - played, budget, out: Boolean(p.out) };
+}
+
+export function formatMinutes(m) {
+  return `${Math.floor(m / 60)}h ${String(Math.round(m % 60)).padStart(2, "0")}m`;
+}

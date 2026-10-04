@@ -1,4 +1,4 @@
-import { ROWS, TIERS, findTile, validate, standings } from "./board.js";
+import { ROWS, TIERS, findTile, validate, standings, playtimeFor, formatMinutes } from "./board.js";
 
 const snapshot = new URLSearchParams(location.search).has("snapshot");
 if (snapshot) document.body.classList.add("snapshot");
@@ -57,6 +57,18 @@ function lineCells(grid) {
   return hit;
 }
 
+function playtimeBar(t) {
+  const el = document.createElement("div");
+  el.className = "ptime" + (t.out ? " out" : t.left <= 120 ? " low" : "");
+  el.innerHTML = `<div class="ptext"><span>Playtime</span><span><b></b> played · <b></b></span></div>` +
+    `<div class="pbar"><i></i></div>`;
+  const [played, left] = el.querySelectorAll("b");
+  played.textContent = formatMinutes(t.played);
+  left.textContent = t.out ? "out of time" : `${formatMinutes(t.left)} left`;
+  el.querySelector("i").style.width = `${(100 * t.played / t.budget).toFixed(1)}%`;
+  return el;
+}
+
 // Snapshot mode: one bingo card per player, laid out three across for Discord.
 function renderCards(list) {
   const wrap = $("cards");
@@ -86,6 +98,7 @@ function renderCards(list) {
         board.appendChild(cell);
       });
     });
+    if (p.time) card.appendChild(playtimeBar(p.time));
     wrap.appendChild(card);
   });
 }
@@ -123,7 +136,8 @@ function renderStandings(list, onSelect) {
     const meta = document.createElement("span");
     meta.className = "meta";
     meta.textContent = `${plural(p.tiles, "tile")}, ${plural(p.lines, "line")}` +
-      (p.restarts ? `, ${plural(p.restarts, "restart")}` : "");
+      (p.restarts ? `, ${plural(p.restarts, "restart")}` : "") +
+      (p.time ? `, ${p.time.left ? formatMinutes(p.time.left) + " playtime left" : "out of playtime"}` : "");
     who.append(name, meta);
 
     const score = document.createElement("span");
@@ -175,6 +189,8 @@ async function main() {
     return;
   }
   try { built = (await getJSON("build.json")).builtAt; } catch { /* optional */ }
+  let playtime = null;
+  try { playtime = await getJSON("playtime.json"); } catch { /* optional: written by the player clock */ }
 
   $("status").innerHTML = statusLine(progress.event, built);
   if (progress.event && progress.event.name) document.querySelector("h1").textContent = progress.event.name;
@@ -188,6 +204,7 @@ async function main() {
   }
 
   const list = standings({ players: (progress.players || []).filter(p => p && p.name && Array.isArray(p.tiles)) });
+  list.forEach(p => { p.time = playtimeFor(playtime, p.name); });
   let current = null;
   const select = (p, btn) => {
     if (current) current.setAttribute("aria-pressed", "false");

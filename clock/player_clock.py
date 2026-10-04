@@ -20,6 +20,7 @@ Usage:
 import base64
 import json
 import os
+import subprocess
 import sys
 import time
 import urllib.error
@@ -28,6 +29,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+REPO = HERE.parent
+PLAYTIME_PATH = REPO / "site" / "playtime.json"
 CONFIG_PATH = Path(os.environ.get("CLOCK_CONFIG", HERE / "clock_config.json"))
 
 
@@ -44,6 +47,8 @@ def load_config():
     cfg.setdefault("enforce_start", True)
     cfg.setdefault("exempt_userids", [])
     cfg.setdefault("discord_update_minutes", 5)
+    cfg.setdefault("publish_minutes", 30)
+    cfg.setdefault("player_names", {})
     cfg["admin_password"] = os.environ.get("PALWORLD_ADMIN_PASSWORD", cfg.get("admin_password", ""))
     cfg["discord_webhook_url"] = os.environ.get("CLOCK_DISCORD_WEBHOOK_URL", cfg.get("discord_webhook_url", ""))
     for key in ("state_file", "adjust_file"):
@@ -155,6 +160,46 @@ def post_discord(cfg, state):
         log(f"Discord update failed ({e.code}). If the message was deleted, clear discord_message_id in the state file.")
     except OSError as e:
         log(f"Discord update failed: {e}")
+
+
+# ---------------------------------------------------------------- standings site
+
+def bingo_name(cfg, uid, rec):
+    """The player's name on the bingo board: from player_names (by userid or
+    in-game name), else the in-game name itself."""
+    names = {k.lower(): v for k, v in cfg["player_names"].items()}
+    return names.get(uid.lower()) or names.get(rec["name"].lower()) or rec["name"]
+
+
+def publish_playtime(cfg, state):
+    """Write site/playtime.json and push it, so the site and the Discord
+    leaderboard show playtime. Only pushes when someone's minutes changed."""
+    players = {}
+    for uid, rec in state["players"].items():
+        name = bingo_name(cfg, uid, rec)
+        entry = players.setdefault(name, {"played_minutes": 0, "out": False})
+        entry["played_minutes"] += int(rec["used_seconds"] // 60)
+        entry["out"] = entry["out"] or rec["exhausted"]
+    data = {"budget_minutes": int(cfg["budget_hours"] * 60), "players": dict(sorted(players.items()))}
+    if data == state.get("published_playtime"):
+        return
+    PLAYTIME_PATH.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    rel = PLAYTIME_PATH.relative_to(REPO).as_posix()
+    steps = [["git", "pull", "--rebase", "--autostash"], ["git", "push"]]
+    # Commit only if the file differs from the last commit (it may already be committed but unpushed).
+    if subprocess.run(["git", "diff", "--quiet", "HEAD", "--", rel], cwd=REPO).returncode != 0:
+        steps.insert(0, ["git", "commit", "-m", "Update playtime", "--", rel])
+    for cmd in steps:
+        try:
+            res = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True, timeout=120)
+        except (OSError, subprocess.TimeoutExpired) as e:
+            log(f"Playtime push failed at '{' '.join(cmd[:2])}': {e}")
+            return
+        if res.returncode != 0:
+            log(f"Playtime push failed at '{' '.join(cmd[:2])}': {(res.stderr or res.stdout).strip()}")
+            return
+    state["published_playtime"] = data  # saved with the clock state; failures retry next time
+    log("Pushed updated playtime to the standings site.")
 
 
 # ---------------------------------------------------------------- the clock
@@ -274,7 +319,7 @@ def run():
     interval = cfg["poll_seconds"]
     log(f"Player clock running: {cfg['budget_hours']}h budget, polling every {interval}s.")
     prev_online, last = set(), time.monotonic()
-    last_discord = 0.0
+    last_discord = last_publish = 0.0
     while True:
         now_mono = time.monotonic()
         dt = now_mono - last
@@ -287,18 +332,21 @@ def run():
             post_discord(cfg, state)
             last_discord = now_mono
         save_state(cfg, state)
+        if cfg["publish_minutes"] and now_mono - last_publish >= cfg["publish_minutes"] * 60:
+            publish_playtime(cfg, state)
+            last_publish = now_mono
         time.sleep(max(1, interval - (time.monotonic() - now_mono)))
 
 
 def status():
     cfg = load_config()
     state = load_state(cfg)
-    rows = sorted(state["players"].values(), key=lambda r: remaining(cfg, r))
+    rows = sorted(state["players"].items(), key=lambda kv: remaining(cfg, kv[1]))
     if not rows:
         print("No players have been seen yet.")
-    for r in rows:
-        print(f"{r['name']:<24} used {fmt(r['used_seconds']):>8}   left {fmt(remaining(cfg, r)):>8}"
-              + ("   OUT OF TIME" if r["exhausted"] else ""))
+    for uid, r in rows:
+        print(f"{r['name']:<20} board: {bingo_name(cfg, uid, r):<18} used {fmt(r['used_seconds']):>8}"
+              f"   left {fmt(remaining(cfg, r)):>8}   {uid}" + ("   OUT OF TIME" if r["exhausted"] else ""))
 
 
 def adjust(who, minutes):

@@ -116,6 +116,14 @@ body.snapshot .cards{display:grid}
 .cell.on{background:var(--accent);color:#fff;font-weight:900;font-size:1rem}
 .cell.on::before{content:"✓"}
 .cell.line{box-shadow:0 0 0 2.5px var(--ink)}
+.ptime{margin-top:12px}
+.ptext{display:flex;justify-content:space-between;gap:8px;font-size:.8rem;color:var(--muted);margin-bottom:4px}
+.ptext:first-child span:first-child{font-weight:700}
+.ptext b{color:var(--ink);font-weight:800}
+.pbar{height:10px;border-radius:999px;background:var(--line);overflow:hidden}
+.pbar i{display:block;height:100%;border-radius:999px;background:var(--a1)}
+.ptime.low .pbar i{background:var(--a4)}
+.ptime.out .pbar i{background:var(--a6)}
 
 @media (max-width:640px){
   .player{grid-template-columns:36px 1fr auto;gap:12px;padding:12px 14px}

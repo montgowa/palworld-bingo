@@ -57,7 +57,11 @@ Python 3.9+, no dependencies.
 3. Optional: set `discord_webhook_url` (it can be the same webhook as the leaderboard). The first run posts
    a message and prints its ID; pin it, and the clock edits it every 5 minutes after that.
 4. Add your own Steam user ID to `exempt_userids` while testing before the event, then remove it.
-5. Run `python3 clock/player_clock.py run` and keep it running: `clock/palworld-clock.service` is a
+5. Playtime on the standings: every `publish_minutes` (default 30) the clock writes `site/playtime.json`
+   and commits and pushes it, so the clock must run from this repo on a PC that can `git push`. Set
+   `publish_minutes` to 0 to turn it off. In-game names that match a board name need nothing; for any
+   other player, map their in-game name or user ID (shown by `status`) in `player_names`.
+6. Run `python3 clock/player_clock.py run` and keep it running: `clock/palworld-clock.service` is a
    systemd example, or use Task Scheduler on Windows. Progress is saved every minute, so restarting the
    script loses nothing.
 
