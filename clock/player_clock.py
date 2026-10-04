@@ -42,7 +42,7 @@ def load_config():
     cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     cfg.setdefault("api_url", "http://127.0.0.1:8212")
     cfg.setdefault("budget_hours", 40)
-    cfg.setdefault("poll_seconds", 60)
+    cfg.setdefault("poll_seconds", 15)
     cfg.setdefault("warn_minutes", [120, 60, 30, 10, 1])
     cfg.setdefault("state_file", "clock_state.json")
     cfg.setdefault("adjust_file", "clock_adjustments.jsonl")
@@ -272,6 +272,7 @@ def tick(cfg, api, state, prev_online, dt, now):
                 exhausted_now.append((uid, rec))
             else:
                 try_kick(api, uid, name, OUT_OF_TIME)
+                log(f"{name} rejoined with no time left and was kicked again.")
             continue
 
         # Only count players seen on the previous poll too, so a join is never
