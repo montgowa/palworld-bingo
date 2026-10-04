@@ -32,8 +32,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 PLAYTIME_PATH = REPO / "site" / "playtime.json"
-OUT_OF_TIME = "You have run out of play-time."
-KICK_DELAY_SECONDS = 5  # time to read the chat message before the kick
+OUT_OF_TIME = "You have run out of play-time."  # the kick reason (the game client never shows it)
+# Said in chat before the kick, since that's what the player actually sees.
+OUT_OF_TIME_CHAT = "{name} is out of play-time. Your Pals have filed a complaint with HR. Go touch grass!"
+KICK_DELAY_SECONDS = 10  # time to read the chat message before the kick
 CONFIG_PATH = Path(os.environ.get("CLOCK_CONFIG", HERE / "clock_config.json"))
 
 
@@ -311,7 +313,7 @@ def kick_out_of_time(api, players):
     if not players:
         return
     for _, name in players:
-        try_announce(api, f"{name}: {OUT_OF_TIME[0].lower()}{OUT_OF_TIME[1:]}")
+        try_announce(api, OUT_OF_TIME_CHAT.format(name=name))
     time.sleep(KICK_DELAY_SECONDS)
     for uid, name in players:
         try_kick(api, uid, name, OUT_OF_TIME)
