@@ -1,9 +1,4 @@
 {
-  "budget_minutes": 3,
-  "players": {
-    "ClapDaddy": {
-      "played_minutes": 3,
-      "out": true
-    }
-  }
+  "budget_minutes": 10,
+  "players": {}
 }
