@@ -34,7 +34,7 @@ REPO = HERE.parent
 PLAYTIME_PATH = REPO / "site" / "playtime.json"
 OUT_OF_TIME = "You have run out of play-time."  # the kick reason (the game client never shows it)
 # Said in chat before the kick, since that's what the player actually sees.
-OUT_OF_TIME_CHAT = "{name} is out of play-time. Your Pals have filed a complaint with HR. Go touch grass!"
+OUT_OF_TIME_CHAT = "{name} is out of play-time. Go touch grass!"
 KICK_DELAY_SECONDS = 10  # time to read the chat message before the kick
 CONFIG_PATH = Path(os.environ.get("CLOCK_CONFIG", HERE / "clock_config.json"))
 
