@@ -49,7 +49,7 @@ export const ROWS = [
     ["Gold Digger", "Hold 1,000,000 gold at once", "S"],
     ["Condensed Milk", "Condense any Pal to 4 stars", "S"],
     ["Fade to Noir", "Defeat the Bellanoir raid", "D"],
-    ["Over the Hill", "Own a Pal at Lv 60 or higher", "D"]] },
+    ["OK Boomer", "Own a Pal at Lv 60 or higher", "D"]] },
 ];
 
 // Flat lookup: lower-cased name -> {r, c, name, detail, danger, points}
