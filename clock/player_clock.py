@@ -19,6 +19,7 @@ Usage:
 
 import base64
 import json
+import math
 import os
 import subprocess
 import sys
@@ -31,6 +32,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 PLAYTIME_PATH = REPO / "site" / "playtime.json"
+OUT_OF_TIME = "You have run out of play-time."  # shown to a player when they are kicked
 CONFIG_PATH = Path(os.environ.get("CLOCK_CONFIG", HERE / "clock_config.json"))
 
 
@@ -89,7 +91,7 @@ def remaining(cfg, rec):
 
 
 def fmt(seconds):
-    m = int(seconds // 60)
+    m = math.ceil(seconds / 60)  # round up, so 59 seconds left reads "0h 01m", not "0h 00m"
     return f"{m // 60}h {m % 60:02d}m"
 
 
@@ -269,7 +271,7 @@ def tick(cfg, api, state, prev_online, dt, now):
             if not rec["exhausted"]:
                 exhausted_now.append((uid, rec))
             else:
-                try_kick(api, uid, name, f"You've used all {cfg['budget_hours']} hours of your playtime.")
+                try_kick(api, uid, name, OUT_OF_TIME)
             continue
 
         # Only count players seen on the previous poll too, so a join is never
@@ -295,7 +297,7 @@ def tick(cfg, api, state, prev_online, dt, now):
         for uid, rec in exhausted_now:
             rec["exhausted"] = True
             try_announce(api, f"{rec['name']} has used all {cfg['budget_hours']} hours. Their clock is out.")
-            try_kick(api, uid, rec["name"], f"You've used all {cfg['budget_hours']} hours of your playtime. Thanks for playing!")
+            try_kick(api, uid, rec["name"], OUT_OF_TIME)
             log(f"{rec['name']} is out of time and was kicked.")
     return seen
 
