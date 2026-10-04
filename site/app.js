@@ -1,4 +1,4 @@
-import { ROWS, TIERS, findTile, validate, standings, playtimeFor, playtimeTier, formatMinutes } from "./board.js";
+import { ROWS, TIERS, findTile, validate, standings, allPlayers, playtimeFor, playtimeTier, formatMinutes } from "./board.js";
 
 const snapshot = new URLSearchParams(location.search).has("snapshot");
 if (snapshot) document.body.classList.add("snapshot");
@@ -108,7 +108,7 @@ function renderStandings(list, onSelect) {
   const ol = $("standings");
   ol.textContent = "";
   if (!list.length) {
-    ol.innerHTML = '<li class="empty">No players yet. Add them to progress.json to start the board.</li>';
+    ol.innerHTML = '<li class="empty">No players yet. Players appear here after their first minute on the server.</li>';
     return [];
   }
   return list.map(p => {
@@ -204,7 +204,7 @@ async function main() {
     errors.forEach(msg => box.querySelector("ul").appendChild(Object.assign(document.createElement("li"), { textContent: msg })));
   }
 
-  const list = standings({ players: (progress.players || []).filter(p => p && p.name && Array.isArray(p.tiles)) });
+  const list = standings({ players: allPlayers(progress, playtime) });
   list.forEach(p => { p.time = playtimeFor(playtime, p.name); });
   let current = null;
   const select = (p, btn) => {

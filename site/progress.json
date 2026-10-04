@@ -4,11 +4,5 @@
     "start": "2026-10-10T18:00:00-04:00",
     "end": "2026-10-24T18:00:00-04:00"
   },
-  "players": [
-    { "name": "ClapDaddy", "restarts": 0, "tiles": [] },
-    { "name": "Epic", "restarts": 0, "tiles": [] },
-    { "name": "Macaroni Mia", "restarts": 0, "tiles": [] },
-    { "name": "UNJolly Jason", "restarts": 0, "tiles": [] },
-    { "name": "whitewidow7012", "restarts": 0, "tiles": [] }
-  ]
+  "players": []
 }

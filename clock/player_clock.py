@@ -180,7 +180,9 @@ def publish_playtime(cfg, state):
         entry = players.setdefault(name, {"played_minutes": 0, "out": False})
         entry["played_minutes"] += int(rec["used_seconds"] // 60)
         entry["out"] = entry["out"] or rec["exhausted"]
-    data = {"budget_minutes": int(cfg["budget_hours"] * 60), "players": dict(sorted(players.items()))}
+    # Players join the standings after their first full minute.
+    players = {name: p for name, p in players.items() if p["played_minutes"] >= 1}
+    data ={"budget_minutes": int(cfg["budget_hours"] * 60), "players": dict(sorted(players.items()))}
     if data == state.get("published_playtime"):
         return
     PLAYTIME_PATH.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")

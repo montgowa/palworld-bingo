@@ -141,3 +141,17 @@ export const PLAYTIME_TIERS = [
 export function playtimeTier(t) {
   return PLAYTIME_TIERS.find(tier => t.left >= tier.min);
 }
+
+// Everyone on the board: players in progress.json, plus anyone the player clock has seen
+// play at least one minute (they join with no tiles until an admin adds some).
+export function allPlayers(progress, playtime) {
+  const players = (progress.players || []).filter(p => p && p.name && Array.isArray(p.tiles));
+  const known = new Set(players.map(p => p.name.toLowerCase()));
+  for (const [name, t] of Object.entries((playtime && playtime.players) || {})) {
+    if ((t.played_minutes || 0) >= 1 && !known.has(name.toLowerCase())) {
+      players.push({ name, restarts: 0, tiles: [] });
+      known.add(name.toLowerCase());
+    }
+  }
+  return players;
+}

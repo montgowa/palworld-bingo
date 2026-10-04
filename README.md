@@ -22,6 +22,9 @@ Edit `site/progress.json` (the GitHub web editor is fine) and commit to `main`:
 { "name": "Alex", "restarts": 1, "tiles": ["Grizzly Situation", "Starter Pack", "Chill Pill"] }
 ```
 
+- Players appear on the board by themselves after their first minute on the server (from the player
+  clock's `site/playtime.json`). Add a player to `progress.json` when they get their first tile, using
+  the name shown on the board; capitalisation doesn't matter.
 - Tiles are listed by their title exactly as shown on the board (e.g. "Grizzly Situation", not "Zoe & Grizzbolt"). Capitalisation doesn't matter.
 - `restarts` is how many times the player has died. It's shown on the leaderboard but doesn't affect the score.
 - Set the real `start` and `end` times in `event` so the site shows "Day X of 14".

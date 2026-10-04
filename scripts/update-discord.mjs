@@ -11,7 +11,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { validate, standings, playtimeFor, playtimeTier, formatMinutes } from "../site/board.js";
+import { validate, standings, allPlayers, playtimeFor, playtimeTier, formatMinutes } from "../site/board.js";
 
 const SITE_DIR = fileURLToPath(new URL("../site/", import.meta.url));
 const { DISCORD_WEBHOOK_URL, DISCORD_MESSAGE_ID, SITE_URL, DRY_RUN } = process.env;
@@ -53,9 +53,9 @@ try {
 }
 
 // Text leaderboard for the embed (readable even before the image loads).
-const list = standings(progress);
 let playtime = null;
 try { playtime = JSON.parse(await readFile(join(SITE_DIR, "playtime.json"), "utf8")); } catch { /* optional */ }
+const list = standings({ players: allPlayers(progress, playtime) });
 const medal = r => ({ 1: "🥇", 2: "🥈", 3: "🥉" }[r] || `**${r}.**`);
 const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
 const timeLeft = name => {
@@ -68,7 +68,7 @@ const lines = list.map(p =>
 
 const embed = {
   title: progress.event?.name || "Palworld Hardcore Bingo",
-  description: (lines.join("\n") || "No players yet.") + (SITE_URL ? `\n\n[Open the full boards](${SITE_URL})` : ""),
+  description: (lines.join("\n") || "No players yet. Players appear after their first minute on the server.") + (SITE_URL ? `\n\n[Open the full boards](${SITE_URL})` : ""),
   color: 0x2f7d4f,
   image: { url: "attachment://standings.png" },
   footer: { text: "Updated" },
