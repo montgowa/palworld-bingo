@@ -6,6 +6,9 @@
 //   SITE_URL             (optional) the public site, linked from the embed
 //   DISCORD_BOARD_WEBHOOK_URL  (optional) where to post the full tile board; defaults to DISCORD_WEBHOOK_URL
 //   DISCORD_BOARD_MESSAGE_ID   (optional) the board message to edit; leave empty on the first run
+//   DISCORD_RULES_MESSAGE_ID   (optional) the rules message to edit (same webhook as the board)
+//
+// Messages are sent board, rules, leaderboard, so on a fresh channel they appear in that order.
 //   DRY_RUN=1            render standings.png and board.png and print the embeds without posting
 
 import http from "node:http";
@@ -18,7 +21,7 @@ import { validate, standings, allPlayers, playtimeFor, playtimeTier, formatMinut
 const SITE_DIR = fileURLToPath(new URL("../site/", import.meta.url));
 const { DISCORD_WEBHOOK_URL, DISCORD_MESSAGE_ID, SITE_URL, DRY_RUN } = process.env;
 const BOARD_WEBHOOK_URL = process.env.DISCORD_BOARD_WEBHOOK_URL || DISCORD_WEBHOOK_URL;
-const { DISCORD_BOARD_MESSAGE_ID } = process.env;
+const { DISCORD_BOARD_MESSAGE_ID, DISCORD_RULES_MESSAGE_ID } = process.env;
 
 const progress = JSON.parse(await readFile(join(SITE_DIR, "progress.json"), "utf8"));
 const errors = validate(progress);
@@ -94,10 +97,26 @@ const boardEmbed = {
   timestamp: embed.timestamp,
 };
 
+// Rules come from the rule sections on the site, so the page and Discord always match.
+const html = await readFile(join(SITE_DIR, "index.html"), "utf8");
+const plainText = h => h.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<")
+  .replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, " ").trim();
+const ruleColors = [0x3a86c8, 0xb83a3a, 0x3f9a4a, 0xc9961a];
+const rulesEmbeds = [...html.matchAll(/<section>\s*<h2>([\s\S]*?)<\/h2>\s*<ul>([\s\S]*?)<\/ul>/g)]
+  .map(([, title, list], i) => ({
+    title: plainText(title),
+    description: [...list.matchAll(/<li>([\s\S]*?)<\/li>/g)].map(([, li]) => `• ${plainText(li)}`).join("\n"),
+    color: ruleColors[i % ruleColors.length],
+  }));
+if (!rulesEmbeds.length) {
+  console.error("Couldn't find the rule sections in site/index.html.");
+  process.exit(1);
+}
+
 if (DRY_RUN) {
   await writeFile("standings.png", png);
   await writeFile("board.png", boardPng);
-  console.log(JSON.stringify([embed, boardEmbed], null, 2));
+  console.log(JSON.stringify([boardEmbed, ...rulesEmbeds, embed], null, 2));
   console.log("Dry run: wrote standings.png and board.png and posted nothing.");
   process.exit(0);
 }
@@ -108,14 +127,15 @@ if (!DISCORD_WEBHOOK_URL) {
 }
 
 // Posts a new message, or edits it when an ID is known. Returns false on failure.
-async function send({ label, webhook, messageId, idVar, embed, file, image }) {
+// With no image, any old attachment on the message is removed.
+async function send({ label, webhook, messageId, idVar, embeds, file, image }) {
   const form = new FormData();
   form.append("payload_json", JSON.stringify({
-    embeds: [embed],
-    attachments: [{ id: 0, filename: file }],
+    embeds,
+    attachments: image ? [{ id: 0, filename: file }] : [],
     allowed_mentions: { parse: [] },
   }));
-  form.append("files[0]", new Blob([image], { type: "image/png" }), file);
+  if (image) form.append("files[0]", new Blob([image], { type: "image/png" }), file);
 
   const base = webhook.replace(/\/+$/, "");
   const url = messageId ? `${base}/messages/${messageId}` : `${base}?wait=true`;
@@ -143,9 +163,11 @@ async function send({ label, webhook, messageId, idVar, embed, file, image }) {
 }
 
 const ok = [
-  await send({ label: "leaderboard", webhook: DISCORD_WEBHOOK_URL, messageId: DISCORD_MESSAGE_ID,
-    idVar: "DISCORD_MESSAGE_ID", embed, file: "standings.png", image: png }),
   await send({ label: "board", webhook: BOARD_WEBHOOK_URL, messageId: DISCORD_BOARD_MESSAGE_ID,
-    idVar: "DISCORD_BOARD_MESSAGE_ID", embed: boardEmbed, file: "board.png", image: boardPng }),
+    idVar: "DISCORD_BOARD_MESSAGE_ID", embeds: [boardEmbed], file: "board.png", image: boardPng }),
+  await send({ label: "rules", webhook: BOARD_WEBHOOK_URL, messageId: DISCORD_RULES_MESSAGE_ID,
+    idVar: "DISCORD_RULES_MESSAGE_ID", embeds: rulesEmbeds }),
+  await send({ label: "leaderboard", webhook: DISCORD_WEBHOOK_URL, messageId: DISCORD_MESSAGE_ID,
+    idVar: "DISCORD_MESSAGE_ID", embeds: [embed], file: "standings.png", image: png }),
 ];
 if (ok.includes(false)) process.exit(1);
