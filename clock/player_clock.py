@@ -36,6 +36,15 @@ OUT_OF_TIME = "You have run out of play-time."  # the kick reason (the game clie
 # Said in chat before the kick, since that's what the player actually sees.
 OUT_OF_TIME_CHAT = "{name} is out of play-time. Go touch grass!"
 KICK_DELAY_SECONDS = 10  # time to read the chat message before the kick
+# Chat warnings, keyed by minutes left (the warn_minutes thresholds). The first four match the
+# colour changes of the playtime bar on the standings (blue, yellow, orange, red).
+WARN_MESSAGES = {
+    30 * 60: "{name} has {left} of play-time left. The bar's gone blue. Your Pals are asking if you have a job.",
+    20 * 60: "{name} has {left} of play-time left. Yellow bar. Lamball has worked every one of those hours, by the way.",
+    10 * 60: "{name} has {left} of play-time left. Orange means stop decorating your base and go fight something.",
+    4 * 60: "{name} has {left} of play-time left. The bar is red. So is your screen-time report.",
+    60: "{name} has {left} of play-time left. Say goodbye to your Pals. The grass misses you.",
+}
 CONFIG_PATH = Path(os.environ.get("CLOCK_CONFIG", HERE / "clock_config.json"))
 
 
@@ -46,7 +55,7 @@ def load_config():
     cfg.setdefault("api_url", "http://127.0.0.1:8212")
     cfg.setdefault("budget_hours", 40)
     cfg.setdefault("poll_seconds", 15)
-    cfg.setdefault("warn_minutes", [120, 60, 30, 10, 1])
+    cfg.setdefault("warn_minutes", [1800, 1200, 600, 240, 60])
     cfg.setdefault("state_file", "clock_state.json")
     cfg.setdefault("adjust_file", "clock_adjustments.jsonl")
     cfg.setdefault("enforce_start", True)
@@ -288,7 +297,8 @@ def tick(cfg, api, state, prev_online, dt, now):
         if crossed:
             rec["warned"].extend(crossed)  # one announcement even if several thresholds were passed at once
             if left > 0:
-                try_announce(api, f"{name}: {fmt(left)} of playtime left. Get somewhere safe before it runs out.")
+                template = WARN_MESSAGES.get(min(crossed), "{name} has {left} of play-time left.")
+                try_announce(api, template.format(name=name, left=fmt(left)))
                 log(f"Warned {name}: {fmt(left)} left.")
         if left <= 0:
             exhausted_now.append((uid, rec))
