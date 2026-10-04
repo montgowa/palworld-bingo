@@ -8,7 +8,7 @@
 //   DISCORD_BOARD_MESSAGE_ID   (optional) the board message to edit; leave empty on the first run
 //   DISCORD_RULES_MESSAGE_ID   (optional) the rules message to edit (same webhook as the board)
 //
-// Messages are sent board, rules, leaderboard, so on a fresh channel they appear in that order.
+// Messages are sent rules, board, leaderboard, so on a fresh channel they appear in that order.
 //   DRY_RUN=1            render standings.png and board.png and print the embeds without posting
 
 import http from "node:http";
@@ -116,7 +116,7 @@ if (!rulesEmbeds.length) {
 if (DRY_RUN) {
   await writeFile("standings.png", png);
   await writeFile("board.png", boardPng);
-  console.log(JSON.stringify([boardEmbed, ...rulesEmbeds, embed], null, 2));
+  console.log(JSON.stringify([...rulesEmbeds, boardEmbed, embed], null, 2));
   console.log("Dry run: wrote standings.png and board.png and posted nothing.");
   process.exit(0);
 }
@@ -163,10 +163,10 @@ async function send({ label, webhook, messageId, idVar, embeds, file, image }) {
 }
 
 const ok = [
-  await send({ label: "board", webhook: BOARD_WEBHOOK_URL, messageId: DISCORD_BOARD_MESSAGE_ID,
-    idVar: "DISCORD_BOARD_MESSAGE_ID", embeds: [boardEmbed], file: "board.png", image: boardPng }),
   await send({ label: "rules", webhook: BOARD_WEBHOOK_URL, messageId: DISCORD_RULES_MESSAGE_ID,
     idVar: "DISCORD_RULES_MESSAGE_ID", embeds: rulesEmbeds }),
+  await send({ label: "board", webhook: BOARD_WEBHOOK_URL, messageId: DISCORD_BOARD_MESSAGE_ID,
+    idVar: "DISCORD_BOARD_MESSAGE_ID", embeds: [boardEmbed], file: "board.png", image: boardPng }),
   await send({ label: "leaderboard", webhook: DISCORD_WEBHOOK_URL, messageId: DISCORD_MESSAGE_ID,
     idVar: "DISCORD_MESSAGE_ID", embeds: [embed], file: "standings.png", image: png }),
 ];
