@@ -95,7 +95,7 @@ def save_state(cfg, state):
 
 
 def budget_seconds(cfg):
-    return cfg["budget_hours"] * 3600
+    return round(cfg["budget_hours"] * 3600)  # whole seconds, so 0.1667 h is exactly 10 minutes
 
 
 def remaining(cfg, rec):
@@ -196,7 +196,7 @@ def publish_playtime(cfg, state):
         entry["out"] = entry["out"] or rec["exhausted"]
     # Players join the standings after their first full minute.
     players = {name: p for name, p in players.items() if p["played_minutes"] >= 1}
-    data ={"budget_minutes": int(cfg["budget_hours"] * 60), "players": dict(sorted(players.items()))}
+    data = {"budget_minutes": round(cfg["budget_hours"] * 60), "players": dict(sorted(players.items()))}
     if data == state.get("published_playtime"):
         return
     PLAYTIME_PATH.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
