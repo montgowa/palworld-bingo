@@ -112,12 +112,14 @@ body.snapshot .cards{display:grid}
 .cscore{font-family:Fredoka,sans-serif;text-align:right;line-height:1}
 .cscore b{font-size:1.7rem;font-weight:700}
 .cscore span{display:block;color:var(--muted);font-family:Nunito,sans-serif;font-size:.75rem}
+.cfinal{display:inline-block;margin:6px 0 0 44px;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--a6);border-radius:999px;padding:2px 9px}
+.card.final .cscore span{color:var(--ink);font-weight:800}
 .cmeta{color:var(--muted);font-size:.85rem;margin:4px 0 10px 44px}
 .cboard{display:grid;grid-template-columns:62px repeat(6,1fr);gap:4px;align-items:center}
 .cboard .ch{font-family:Fredoka,sans-serif;font-size:.72rem;color:var(--muted);text-align:center}
 .cboard .rl{font-size:.75rem;font-weight:700;color:var(--muted);text-align:right;padding-right:4px;white-space:nowrap}
 .cell{aspect-ratio:1;border-radius:6px;background:var(--tint);display:grid;place-items:center;font-size:.8rem;color:var(--ink)}
-.cell.skull{background:repeating-linear-gradient(135deg,var(--tint) 0 5px,color-mix(in srgb,var(--accent) 28%,var(--tint)) 5px 8px)}
+.cell.danger{background:repeating-linear-gradient(135deg,var(--tint) 0 5px,color-mix(in srgb,var(--accent) 28%,var(--tint)) 5px 8px)}
 .cell.on{background:var(--accent);color:#fff;font-weight:900;font-size:1rem}
 .cell.on::before{content:"✓"}
 .cell.line{box-shadow:0 0 0 2.5px var(--ink)}

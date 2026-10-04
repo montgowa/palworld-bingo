@@ -71,7 +71,7 @@ const medal = r => ({ 1: "🥇", 2: "🥈", 3: "🥉" }[r] || `**${r}.**`);
 const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
 const timeLeft = name => {
   const t = playtimeFor(playtime, name);
-  return !t ? "" : ` · ${playtimeTier(t).emoji} ` + (t.left ? `${formatMinutes(t.left)} left` : "out of time");
+  return !t ? "" : ` · ${playtimeTier(t).emoji} ` + (t.left ? `${formatMinutes(t.left)} left` : "out of time · 🏁 final");
 };
 const lines = list.map(p =>
   `${medal(p.rank)} **${p.name}**: ${p.total} pts (${plural(p.tiles, "tile")}, ${plural(p.lines, "line")}` +

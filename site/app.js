@@ -87,6 +87,12 @@ function renderCards(list) {
     card.querySelector(".crank").textContent = p.rank;
     card.querySelector(".cname").textContent = p.name;
     card.querySelector(".cscore b").textContent = p.total;
+    if (p.time && p.time.out) {
+      // Out of playtime: nothing more can change, so the score is final.
+      card.classList.add("final");
+      card.querySelector(".cscore span").textContent = "final score";
+      card.querySelector(".cmeta").before(Object.assign(document.createElement("div"), { className: "cfinal", textContent: "Out of time" }));
+    }
     card.querySelector(".cmeta").textContent = `${plural(p.tiles, "tile")} · ${plural(p.lines, "line")}` +
       (p.restarts ? ` · ${plural(p.restarts, "restart")}` : "") + (p.tied ? " · tied" : "");
 
@@ -99,7 +105,7 @@ function renderCards(list) {
       row.tiles.forEach(([n], c) => {
         const cell = document.createElement("i");
         const on = p.grid[r][c];
-        cell.className = "cell" + (on ? " on" : findTile(n).danger ? " skull" : "") + (lines.has(r * 6 + c) ? " line" : "");
+        cell.className = "cell" + (on ? " on" : findTile(n).danger ? " danger" : "") + (lines.has(r * 6 + c) ? " line" : "");
         rowColors(cell, r);
         board.appendChild(cell);
       });
@@ -148,7 +154,7 @@ function renderStandings(list, onSelect) {
 
     const score = document.createElement("span");
     score.className = "score";
-    score.innerHTML = `<b>${p.total}</b><span>points</span>`;
+    score.innerHTML = `<b>${p.total}</b><span>${p.time && p.time.out ? "final score" : "points"}</span>`;
 
     btn.append(rank, who, miniBoard(p.grid), score);
     btn.setAttribute("aria-label", `${p.name}, rank ${p.rank}, ${p.total} points, ${meta.textContent}`);
