@@ -32,7 +32,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 PLAYTIME_PATH = REPO / "site" / "playtime.json"
-OUT_OF_TIME = "You have run out of play-time."  # shown to a player when they are kicked
+OUT_OF_TIME = "You have run out of play-time."
+KICK_DELAY_SECONDS = 5  # time to read the chat message before the kick
 CONFIG_PATH = Path(os.environ.get("CLOCK_CONFIG", HERE / "clock_config.json"))
 
 
@@ -250,6 +251,7 @@ def tick(cfg, api, state, prev_online, dt, now):
     before_start = cfg["start_ts"] is not None and now < cfg["start_ts"]
     seen = set()
     exhausted_now = []
+    rekick = []  # out of time already, but rejoined
 
     for p in online:
         uid, name = p.get("userId"), p.get("name") or p.get("accountName") or "Unknown"
@@ -271,8 +273,7 @@ def tick(cfg, api, state, prev_online, dt, now):
             if not rec["exhausted"]:
                 exhausted_now.append((uid, rec))
             else:
-                try_kick(api, uid, name, OUT_OF_TIME)
-                log(f"{name} rejoined with no time left and was kicked again.")
+                rekick.append((uid, name))
             continue
 
         # Only count players seen on the previous poll too, so a join is never
@@ -297,10 +298,23 @@ def tick(cfg, api, state, prev_online, dt, now):
             log(f"World save before kick failed: {e}")
         for uid, rec in exhausted_now:
             rec["exhausted"] = True
-            try_announce(api, f"{rec['name']} has used all {cfg['budget_hours']} hours. Their clock is out.")
-            try_kick(api, uid, rec["name"], OUT_OF_TIME)
             log(f"{rec['name']} is out of time and was kicked.")
+    for uid, name in rekick:
+        log(f"{name} rejoined with no time left and was kicked again.")
+    kick_out_of_time(api, [(uid, rec["name"]) for uid, rec in exhausted_now] + rekick)
     return seen
+
+
+def kick_out_of_time(api, players):
+    """The game client shows any kick as "connection lost" and never displays the
+    kick reason, so say it in chat first and give players a moment to read it."""
+    if not players:
+        return
+    for _, name in players:
+        try_announce(api, f"{name}: {OUT_OF_TIME[0].lower()}{OUT_OF_TIME[1:]}")
+    time.sleep(KICK_DELAY_SECONDS)
+    for uid, name in players:
+        try_kick(api, uid, name, OUT_OF_TIME)
 
 
 def try_kick(api, uid, name, message):
