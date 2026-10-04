@@ -36,6 +36,9 @@ OUT_OF_TIME = "You have run out of play-time."  # the kick reason (the game clie
 # Said in chat before the kick, since that's what the player actually sees.
 OUT_OF_TIME_CHAT = "{name} is out of play-time. Go touch grass!"
 KICK_DELAY_SECONDS = 10  # time to read the chat message before the kick
+
+# Names and emoji in log lines would crash a Windows console that isn't UTF-8.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 # Chat warnings, keyed by minutes left (the warn_minutes thresholds). The first four match the
 # colour changes of the playtime bar on the standings (blue, yellow, orange, red).
 WARN_MESSAGES = {

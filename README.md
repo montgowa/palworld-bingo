@@ -16,7 +16,8 @@ Approve a screenshot in Discord, add the tile to `site/progress.json`, push, and
 
 ## Updating progress
 
-Edit `site/progress.json` (the GitHub web editor is fine) and commit to `main`:
+The tile bot (below) does this when an admin reacts ✅ to a screenshot. To edit by hand (fixes,
+`restarts`, removing a tile), edit `site/progress.json` (the GitHub web editor is fine) and commit to `main`:
 
 ```json
 { "name": "Alex", "restarts": 1, "tiles": ["Grizzly Situation", "Starter Pack", "Chill Pill"] }
@@ -77,3 +78,25 @@ python3 clock/player_clock.py adjust Alex -15  # charge 15 minutes
 ```
 
 Time is only counted while the server answers, so server downtime never costs anyone playtime.
+
+## Tile bot (approve screenshots with ✅)
+
+`bot/tile_bot.py` watches the tile screenshot channel. Players post a screenshot with the tile's title in
+the same message, one tile per post. When an admin reacts ✅, the bot adds the tile to that player in
+`site/progress.json`, pushes, and reacts 🎉. It replies once to posts it can't use (no title, two titles,
+a poster it can't match to a board name) so the player can edit their post, and to duplicates.
+
+Python 3.9+, no dependencies. Run it from this repo on the same PC as the clock.
+
+1. Discord Developer Portal → New Application → **Bot**: copy the token and turn on
+   **Message Content Intent**.
+2. OAuth2 → URL Generator: scope `bot`; permissions View Channels, Read Message History, Send Messages
+   and Add Reactions. Open the URL to invite the bot.
+3. Copy `bot/bot_config.example.json` to `bot/bot_config.json` (git-ignored) and set `bot_token`,
+   `channel_id` and `admin_ids` (Discord user IDs; turn on Developer Mode, then right-click → Copy ID).
+4. `players` maps Discord user IDs to board names. Anyone whose Discord display name or username already
+   matches a board name works without it.
+5. `python bot/tile_bot.py check` prints what it would do without changing anything. Then run
+   `python bot/tile_bot.py run` and keep it running.
+
+Admins can't approve their own posts. Removing a ✅ doesn't remove a tile; edit `progress.json` for that.

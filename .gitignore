@@ -7,3 +7,6 @@ clock/clock_state.tmp
 clock/clock_adjustments.jsonl
 __pycache__/
 board.png
+bot/bot_config.json
+bot/bot_state.json
+bot/bot_state.tmp

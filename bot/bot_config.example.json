@@ -1,0 +1,10 @@
+{
+  "bot_token": "",
+  "channel_id": "",
+  "admin_ids": [],
+  "players": {
+    "Discord user ID": "Name on the bingo board"
+  },
+  "poll_seconds": 30,
+  "approve_emoji": "✅"
+}
