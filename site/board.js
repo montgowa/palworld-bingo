@@ -126,3 +126,18 @@ export function playtimeFor(playtime, name) {
 export function formatMinutes(m) {
   return `${Math.floor(m / 60)}h ${String(Math.round(m % 60)).padStart(2, "0")}m`;
 }
+
+// Color tiers by playtime left, shared by the site bar and the Discord text list.
+// `color` is a CSS token from index.html; the first tier with left >= min applies.
+export const PLAYTIME_TIERS = [
+  { min: 30 * 60, color: "--a2", emoji: "🟢" },
+  { min: 20 * 60, color: "--a1", emoji: "🔵" },
+  { min: 10 * 60, color: "--a3", emoji: "🟡" },
+  { min: 4 * 60, color: "--a4", emoji: "🟠" },
+  { min: 1, color: "--a5", emoji: "🔴" },
+  { min: 0, color: "--a6", emoji: "⛔" },
+];
+
+export function playtimeTier(t) {
+  return PLAYTIME_TIERS.find(tier => t.left >= tier.min);
+}

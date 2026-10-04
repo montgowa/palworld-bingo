@@ -1,4 +1,4 @@
-import { ROWS, TIERS, findTile, validate, standings, playtimeFor, formatMinutes } from "./board.js";
+import { ROWS, TIERS, findTile, validate, standings, playtimeFor, playtimeTier, formatMinutes } from "./board.js";
 
 const snapshot = new URLSearchParams(location.search).has("snapshot");
 if (snapshot) document.body.classList.add("snapshot");
@@ -59,7 +59,8 @@ function lineCells(grid) {
 
 function playtimeBar(t) {
   const el = document.createElement("div");
-  el.className = "ptime" + (t.out ? " out" : t.left <= 120 ? " low" : "");
+  el.className = "ptime";
+  el.style.setProperty("--ptime", `var(${playtimeTier(t).color})`);
   el.innerHTML = `<div class="ptext"><span>Playtime</span><span><b></b> played · <b></b></span></div>` +
     `<div class="pbar"><i></i></div>`;
   const [played, left] = el.querySelectorAll("b");

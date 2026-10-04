@@ -11,7 +11,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { validate, standings, playtimeFor, formatMinutes } from "../site/board.js";
+import { validate, standings, playtimeFor, playtimeTier, formatMinutes } from "../site/board.js";
 
 const SITE_DIR = fileURLToPath(new URL("../site/", import.meta.url));
 const { DISCORD_WEBHOOK_URL, DISCORD_MESSAGE_ID, SITE_URL, DRY_RUN } = process.env;
@@ -60,7 +60,7 @@ const medal = r => ({ 1: "🥇", 2: "🥈", 3: "🥉" }[r] || `**${r}.**`);
 const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
 const timeLeft = name => {
   const t = playtimeFor(playtime, name);
-  return !t ? "" : t.left ? ` · ⏱ ${formatMinutes(t.left)} left` : " · ⏱ out of time";
+  return !t ? "" : ` · ${playtimeTier(t).emoji} ` + (t.left ? `${formatMinutes(t.left)} left` : "out of time");
 };
 const lines = list.map(p =>
   `${medal(p.rank)} **${p.name}**: ${p.total} pts (${plural(p.tiles, "tile")}, ${plural(p.lines, "line")}` +
