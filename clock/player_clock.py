@@ -183,9 +183,17 @@ def post_discord(cfg, state):
 
 def bingo_name(cfg, uid, rec):
     """The player's name on the bingo board: from player_names (by userid or
-    in-game name), else the in-game name itself."""
+    Steam name), else the Steam name itself."""
     names = {k.lower(): v for k, v in cfg["player_names"].items()}
     return names.get(uid.lower()) or names.get(rec["name"].lower()) or rec["name"]
+
+
+def new_on_board(cfg, state):
+    """True when someone has played a full minute but isn't on the published board yet,
+    so new players show up straight away instead of at the next publish_minutes cycle."""
+    published = (state.get("published_playtime") or {}).get("players", {})
+    return any(rec["used_seconds"] >= 60 and bingo_name(cfg, uid, rec) not in published
+               for uid, rec in state["players"].items())
 
 
 def publish_playtime(cfg, state):
@@ -268,7 +276,11 @@ def tick(cfg, api, state, prev_online, dt, now):
     rekick = []  # out of time already, but rejoined
 
     for p in online:
-        uid, name = p.get("userId"), p.get("name") or p.get("accountName") or "Unknown"
+        # The board uses the Steam account name, which stays the same across deaths; chat
+        # uses the character name (`name`), which is what other players see in game.
+        uid = p.get("userId")
+        account = p.get("accountName") or p.get("name") or "Unknown"
+        name = p.get("name") or account
         if not uid or uid in cfg["exempt_userids"]:
             continue
         seen.add(uid)
@@ -278,8 +290,8 @@ def tick(cfg, api, state, prev_online, dt, now):
             try_kick(api, uid, name, f"The event hasn't started yet. Everyone starts together at {start}.")
             continue
 
-        rec = state["players"].setdefault(uid, {"name": name, "used_seconds": 0, "warned": [], "exhausted": False})
-        rec["name"] = name
+        rec = state["players"].setdefault(uid, {"name": account, "used_seconds": 0, "warned": [], "exhausted": False})
+        rec["name"], rec["character"] = account, name
         if not in_event:
             continue
 
@@ -316,7 +328,7 @@ def tick(cfg, api, state, prev_online, dt, now):
             log(f"{rec['name']} is out of time and was kicked.")
     for uid, name in rekick:
         log(f"{name} rejoined with no time left and was kicked again.")
-    kick_out_of_time(api, [(uid, rec["name"]) for uid, rec in exhausted_now] + rekick)
+    kick_out_of_time(api, [(uid, rec.get("character", rec["name"])) for uid, rec in exhausted_now] + rekick)
     return seen
 
 
@@ -366,7 +378,9 @@ def run():
             post_discord(cfg, state)
             last_discord = now_mono
         save_state(cfg, state)
-        if cfg["publish_minutes"] and now_mono - last_publish >= cfg["publish_minutes"] * 60:
+        due = now_mono - last_publish >= cfg["publish_minutes"] * 60
+        new = now_mono - last_publish >= 60 and new_on_board(cfg, state)  # at most once a minute
+        if cfg["publish_minutes"] and (due or new):
             publish_playtime(cfg, state)
             last_publish = now_mono
         time.sleep(max(1, interval - (time.monotonic() - now_mono)))
