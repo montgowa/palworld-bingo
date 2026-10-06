@@ -2,11 +2,11 @@
   "budget_minutes": 2400,
   "players": {
     "ClapDaddy": {
-      "played_minutes": 53,
+      "played_minutes": 70,
       "out": false
     },
     "Epic Lad": {
-      "played_minutes": 38,
+      "played_minutes": 52,
       "out": false
     }
   }
