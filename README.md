@@ -44,6 +44,17 @@ npx serve site         # or any static server, to view the site
 
 Tiles, points and line bonuses all live in `site/board.js`. The site and the Discord message both read from it, so a change there updates both.
 
+## Starting the game server
+
+`server/start-palserver.ps1` starts the Palworld dedicated server with Pocketpair's recommended
+performance flags (`-useperfthreads -NoAsyncLoadingThread -UseMultithreadForDS`). On the host PC, a
+registry setting (Image File Execution Options → `PalServer-Win64-Shipping-Cmd.exe` → `PerfOptions` →
+`CpuPriorityClass` = 3) makes Windows run the server at High priority however it's started.
+
+Server config lives outside this repo in `Pal/Saved/Config/WindowsServer/`. Edit `PalWorldSettings.ini`
+and `Engine.ini` only while the server is stopped: it rewrites them on shutdown, so changes made while it
+runs are lost.
+
 ## Player clock (40-hour budget)
 
 `clock/player_clock.py` runs on the game server and gives each player 40 hours for the whole event.
