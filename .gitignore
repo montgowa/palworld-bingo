@@ -10,3 +10,4 @@ board.png
 bot/bot_config.json
 bot/bot_state.json
 bot/bot_state.tmp
+server/backups/
