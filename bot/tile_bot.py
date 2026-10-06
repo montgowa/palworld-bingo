@@ -154,16 +154,22 @@ def commit(message):
     return ok
 
 
-def push_if_ahead():
-    """Pushes any local commits. Called every pass, so a failed push retries."""
+def push_if_ahead(state):
+    """Pushes the bot's tile commits. Called every pass while one is unpushed, so a failed
+    push retries. The player clock pushes its own playtime commits; leaving those to it
+    keeps the two from pushing over each other."""
+    if not state.get("unpushed"):
+        return
     ok, out = git("rev-list", "--count", "@{u}..HEAD")
-    if not ok or out == "0":
+    if ok and out == "0":  # the clock's push already carried it
+        state["unpushed"] = False
         return
     for step in (("pull", "--rebase", "--autostash"), ("push",)):
         ok, out = git(*step)
         if not ok:
             log(f"Push failed at 'git {step[0]}': {out}")
             return
+    state["unpushed"] = False
     log("Pushed approved tiles to the standings site.")
 
 
@@ -240,7 +246,7 @@ def problem_with(cfg, msg, names):
 
 def run_pass(cfg, discord, state, names, dry_run=False):
     if not dry_run:
-        push_if_ahead()
+        push_if_ahead(state)
     approve = cfg["approve_emoji"]
     added = []  # (message id, player, tile)
 
@@ -288,7 +294,8 @@ def run_pass(cfg, discord, state, names, dry_run=False):
                     discord.react(mid, DONE_EMOJI)
                 except (urllib.error.URLError, OSError) as e:
                     log(f"Couldn't react to {mid}: {e}")
-            push_if_ahead()
+            state["unpushed"] = True
+            push_if_ahead(state)
         else:
             git("checkout", "--", PROGRESS_PATH.relative_to(REPO).as_posix())  # retry next pass
 
